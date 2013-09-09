@@ -1,0 +1,12 @@
+{
+  "name": "nodebindplay",
+  "version": "0.0.0",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "components"
+  ],
+  "dependencies": {
+    "polymer": "~0.0.20130905"
+  }
+}

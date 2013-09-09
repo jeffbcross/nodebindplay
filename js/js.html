@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="http://code.angularjs.org/1.2.0-rc.2/angular.js"></script>
+    <script src="components/polymer/polymer.min.js"></script>
+    <script>
+      var app = angular.module('JSNodeBind', []);
+
+      app.controller('ExampleCtrl', function ($scope) {
+        $scope.obj = {
+          slider: 1
+        };
+      });
+
+      app.directive('nodeBind', function ($parse) {
+        return {
+          restrict: 'A',
+          scope: false,
+          link: function (scope, element, attr) {
+            element[0].bind('value', scope, attr.nodeBind);
+            element.on('change', function (e) {
+              scope[attr.nodeBind] = e.target.value;
+            });
+          }
+        }
+      });
+    </script>
+  </head>
+  <body ng-app="JSNodeBind">
+    <div ng-controller="ExampleCtrl">
+      <input type="range" node-bind="obj.slider">
+      <br>
+      Value: <input type="text" node-bind="obj.slider">
+    </div>
+  </body>
+</html>
