@@ -1,36 +1,118 @@
 <!doctype html>
 <html>
   <head>
-    <script src="http://code.angularjs.org/1.2.0-rc.2/angular.js"></script>
+    <link rel="stylesheet" href="components/bootstrap/dist/css/bootstrap.css">
+    <script src="components/angular/angular.js"></script>
     <script src="components/polymer/polymer.min.js"></script>
     <script>
       var app = angular.module('JSNodeBind', []);
 
-      app.controller('ExampleCtrl', function ($scope) {
+      app.controller('SimpleTwoWayCtrl', function ($scope) {
         $scope.obj = {
           slider: 1
         };
       });
 
-      app.directive('nodeBind', function ($parse) {
+      app.controller('PolymerExampleCtrl', function ($scope) {
+        $scope.obj = {
+          pressed: 0
+        };
+      });
+
+      app.directive('nodeBind', function ($parse, $interpolate) {
         return {
           restrict: 'A',
           scope: false,
           link: function (scope, element, attr) {
-            element[0].bind('value', scope, attr.nodeBind);
+            var bindingOptions = getBindingOptions(attr.nodeBind);
+            var getter = $parse(bindingOptions.reference);
+
+            //Bind the element's value property to the object
+            element[0].bind('value', scope, bindingOptions.reference);
             element.on('change', function (e) {
-              scope[attr.nodeBind] = e.target.value;
+              getter.assign(scope, e.target.value);
             });
+
+            if (element[0].watchProperty) {
+              element[0].watchProperty(bindingOptions.property, function (val) {
+                getter.assign(scope, val);
+              });
+            }
+
+            function getBindingOptions (attribute) {
+              var splitAttribute = attribute.split(':');
+              return {
+                reference: splitAttribute[1] || splitAttribute[0],
+                property: splitAttribute[1] ? splitAttribute[0] : null
+              };
+            }
           }
         }
       });
+
+      // var XFooButtonPrototype = Object.create(HTMLButtonElement.prototype);
+      // XFooButtonPrototype.createdCallback = function() {
+      //   this.textContent = "I'm an x-foo button!";
+      //   this.pressed = 0;
+      // };
+
+      // var XFooButton = document.register('x-foo-button', {
+      //   prototype: XFooButtonPrototype,
+      //   extends: 'button'
+      // });
     </script>
   </head>
   <body ng-app="JSNodeBind">
-    <div ng-controller="ExampleCtrl">
-      <input type="range" node-bind="obj.slider">
-      <br>
-      Value: <input type="text" node-bind="obj.slider">
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div ng-controller="SimpleTwoWayCtrl" class="col-lg-4 col-md-2">
+          <h1>Simple, Two-Way Binding</h1>
+          <p>
+            Two inputs, a range and a text input, both use the node-bind directive to automatically update when a value changes on the bound object, and to automatically update the bound object when the value property of the input changes.
+          </p>
+          <!--
+            Simple two-way binding implementation by reference.
+
+            Nice-to-haves:
+             * Bind to custom properties of Polymer component
+             * Explicit directional binding
+             * Bind by string
+             * Bind by expression
+             * Bind to user-specified properties of element
+          -->
+          <input type="range" node-bind="obj.slider">
+          <br>
+          Value: <input type="text" node-bind="obj.slider">
+        </div>
+
+        <div class="col-lg-4 col-md-2" ng-controller="PolymerExampleCtrl">
+          <h1>Binding to Polymer Component</h1>
+
+          <p></p>
+
+
+          <polymer-element name="x-foo-button">
+            <template bind="{{ pressed }}">
+              <button on-click="press">Press Me</button>
+            </template>
+            <script>Polymer('x-foo-button', {
+              pressed: 0,
+              watchProperty: function (name, callback) {
+                this[name + 'ChangedCallback'] = callback;
+              },
+              press: function () {
+                this.pressed++;
+              },
+              pressedChanged: function (val) {
+                if (this.pressedChangedCallback) this.pressedChangedCallback(val);
+              }
+            });</script>
+          </polymer-element>
+
+          <x-foo-button node-bind="pressed:obj.pressed">Press Me</x-foo-button>
+          <input node-bind="obj.pressed">
+        </div>
+      </div>
     </div>
   </body>
 </html>

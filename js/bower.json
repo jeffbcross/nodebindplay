@@ -7,6 +7,8 @@
     "components"
   ],
   "dependencies": {
-    "polymer": "~0.0.20130905"
+    "polymer": "~0.0.20130905",
+    "angular": "~1.2.0-rc.2",
+    "bootstrap": "~3.0.0"
   }
 }
