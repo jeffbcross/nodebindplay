@@ -13,30 +13,18 @@
         };
       });
 
-      app.controller('PolymerExampleCtrl', function ($scope) {
-        $scope.obj = {
-          pressed: 0
-        };
-      });
-
       app.directive('nodeBind', function ($parse, $interpolate) {
         return {
           restrict: 'A',
           scope: false,
           link: function (scope, element, attr) {
             var bindingOptions = getBindingOptions(attr.nodeBind);
-            var getter = $parse(bindingOptions.reference);
 
-            //Bind the element's value property to the object
-            element[0].bind('value', scope, bindingOptions.reference);
-            element.on('change', function (e) {
-              getter.assign(scope, e.target.value);
-            });
-
-            if (element[0].watchProperty) {
-              element[0].watchProperty(bindingOptions.property, function (val) {
-                getter.assign(scope, val);
-              });
+            if (bindingOptions.property) {
+              element[0].bind(bindingOptions.property, scope, bindingOptions.reference);
+            }
+            else if (element[0] instanceof HTMLInputElement) {
+              element[0].bind('value', scope, bindingOptions.reference);
             }
 
             function getBindingOptions (attribute) {
@@ -49,17 +37,6 @@
           }
         }
       });
-
-      // var XFooButtonPrototype = Object.create(HTMLButtonElement.prototype);
-      // XFooButtonPrototype.createdCallback = function() {
-      //   this.textContent = "I'm an x-foo button!";
-      //   this.pressed = 0;
-      // };
-
-      // var XFooButton = document.register('x-foo-button', {
-      //   prototype: XFooButtonPrototype,
-      //   extends: 'button'
-      // });
     </script>
   </head>
   <body ng-app="JSNodeBind">
@@ -77,36 +54,71 @@
              * Bind to custom properties of Polymer component
              * Explicit directional binding
              * Bind by string
-             * Bind by expression
+             * Bind by exprasdfaession
              * Bind to user-specified properties of element
-          -->
+           -->
           <input type="range" node-bind="obj.slider">
           <br>
           Value: <input type="text" node-bind="obj.slider">
         </div>
 
         <div class="col-lg-4 col-md-2" ng-controller="PolymerExampleCtrl">
+          <script>
+            app.controller('PolymerExampleCtrl', function ($scope) {
+              $scope.obj = {
+                pressed: 0
+              };
+            });
+
+            var XFooProto = Object.create(HTMLButtonElement.prototype);
+
+            XFooProto.press = function () {
+              this.pressed++;
+            };
+
+            Object.defineProperty(XFooProto, 'pressed', {value: 0, writable: true});
+          </script>
+
           <h1>Binding to Polymer Component</h1>
 
-          <p></p>
+          <p>
+            This approach binds a shared "pressed" property with
+            a custom Polymer element, and a standard input box,
+            using the same node-bind Angular directive used in
+            the first example.
+
+            Clicking the button increments the property, and
+            the property can be manually set using the text input.
+          </p>
+          <p>
+            Here's how it works underneath:
+          </p>
+          <ul>
+            <li>
+              The element defines a writeable "pressed" property in its prototype.
+            </li>
+            <li>
+              The polymer-element definition exposes the "pressed" property by
+              listing it in its attributes attribute.
+              (Read that line again slowly if you're confused.)
+            </li>
+            <li>
+              The instance of the custom element invokes the node-bind directive,
+              providing a colon-separated property:model pair.
+
+              The "property" is the property to bind to on the custom element, and the "model"
+              references a path on an object on the current scope.
+            </li>
+            <li>
+              The directive
+          </ul>
 
 
-          <polymer-element name="x-foo-button">
-            <template bind="{{ pressed }}">
-              <button on-click="press">Press Me</button>
+          <polymer-element name="x-foo-button" attributes="pressed" on-click="press">
+            <template>
+              <button>Press Me</button>
             </template>
-            <script>Polymer('x-foo-button', {
-              pressed: 0,
-              watchProperty: function (name, callback) {
-                this[name + 'ChangedCallback'] = callback;
-              },
-              press: function () {
-                this.pressed++;
-              },
-              pressedChanged: function (val) {
-                if (this.pressedChangedCallback) this.pressedChangedCallback(val);
-              }
-            });</script>
+            <script>Polymer('x-foo-button', XFooProto);</script>
           </polymer-element>
 
           <x-foo-button node-bind="pressed:obj.pressed">Press Me</x-foo-button>
